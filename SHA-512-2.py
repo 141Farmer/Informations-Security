@@ -24,26 +24,30 @@ Constants= [
         0x4cc5d4becb3e42b6, 0x597f299cfc657e2a,0x5fcb6fab3ad6faec, 0x6c44198c4a475817 
     ]
 
-initialHashValues=[
-                    0x6a09e667f3bcc908,0xbb67ae8584caa73b,0x3c6ef372fe94f82b,0xa54ff53a5f1d36f1,
-                    0x510e527fade682d1,0x9b05688c2b3e6c1f,0x1f83d9abfb41bd6b,0x5be0cd19137e2179
-                ]
 
-def rotateRight(x,n):
-    return (x>>n) | (x<<(64-n)) & 0xFFFFFFFF
- 
+INITIAL_HASH_VALUES = [0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
+                       0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179]
+
+
+def rotate_right(x, n):
+    return (x >> n) | (x << (8 - n))
+
 
 def sigma0(x):
-    return rotateRight(x,28)^rotateRight(x,34)^rotateRight(x,39)
+    return rotate_right(x, 28) ^ rotate_right(x, 34) ^ rotate_right(x, 39)
+
 
 def sigma1(x):
-    return rotateRight(x,14)^rotateRight(x,18)^rotateRight(x,41)
+    return rotate_right(x, 14) ^ rotate_right(x, 18) ^ rotate_right(x, 41)
 
-def Ch(x,y,z):
-    return (x&y)^((~x)&z)
 
-def Maj(x,y,z):
-    return (x&y)^(x&z)^(y&z)
+def Ch(x, y, z):
+    return (x & y) ^ (~x & z)
+
+
+def Maj(x, y, z):
+    return (x & y) ^ (x & z) ^ (y & z)
+
 
 def paddingBits(string):
     binString=''.join(format(ord(i),'08b') for i in string)
@@ -60,13 +64,15 @@ def paddingBits(string):
     zeros=''
 
     if lenAppendedBits==0:
-        zeros=''.join((1023-128)*'0')
+        zeros=''.join((1023-lenShort)*'0')
     else:
         zeros=''.join('0'*(lenAppendedBits-1))
 
     return binString+ones+zeros+lengthBin
 
-def dividor(paddedBinStr):
+
+def divide_blocks(paddedBinStr):
+
     numBlock=ceil(len(paddedBinStr)/1024)
     blocks=[]
     for i in range(numBlock):
@@ -74,65 +80,58 @@ def dividor(paddedBinStr):
         blocks.append(block)
     return numBlock,blocks
 
-def processMessage(block,hashValues):
-    #print(block,type(block))
-    chunks=[]
-    #print(chunks)
-    a,b,c,d,e,f,g,h=hashValues
+
+def process_message(block, hash_values):
+
+    chunks = []
+    a, b, c, d, e, f, g, h = hash_values
     for i in range(80):
-        if i<16:
-            chunks.append(int(block[i*64:(i+1)*64],2))
+        if i < 16:
+            chunks.append(int(block[i * 64:(i + 1) * 64], 2))
         else:
-            chunks.append(sigma1(chunks[i-2])+chunks[i-7]+sigma0(chunks[i-15]+chunks[i-16]))
+            chunks.append(sigma1(chunks[i - 2]) + chunks[i - 7] + sigma0(chunks[i - 15]) + chunks[i - 16] + Constants[i]) 
 
-        T1=h+Ch(e,f,g)+sigma1(e)+chunks[i]
-        T2=sigma0(a)+Maj(a,b,c)
-        h=g
-        g=f
-        f=e
-        e=d+T1
-        d=c
-        c=b
-        b=a
-        a=T1+T2
+        T1 = h + Ch(e, f, g) + sigma1(e) + chunks[i]
+        T2 = sigma0(a) + Maj(a, b, c)
+        h = g
+        g = f
+        f = e
+        e = d + T1
+        d = c
+        c = b
+        b = a
+        a = T1 + T2
 
-    return a,b,c,d,e,f,g,h
-
-
+    return a, b, c, d, e, f, g, h
 
 
-def concatenateHash(hashValues):
-    string=''
-    for c in hashValues:
-        print(hex(int(c)))
-        string+=str(hex(int(c)))
+def concatenate_hash(hash_values):
+    """Concatenate the hash values."""
+    string = ''
+    for c in hash_values:
+        string += format(c, '016x')  # Format the hash value as a 16-character hexadecimal string
     return string
 
 
-def traverse(numBlock,blocks):
-    hashValues=initialHashValues
-    messageSchedule=[]
-    for i in range(numBlock):
-        tempHashValues=processMessage(blocks[i],hashValues)
-        for j in range(8):
-            hashValues[j]+=tempHashValues[j]
-    print(hashValues)
-    finalHash=concatenateHash(hashValues)
-    #print(finalHash[2:])
-
-    
+def traverse(num_blocks, blocks):
+    hash_values = INITIAL_HASH_VALUES
+    for i in range(num_blocks):
+        temp_hash_values = process_message(blocks[i], hash_values)
+        hash_values = [sum(x) & 0xFFFFFFFFFFFFFFFF for x in zip(hash_values, temp_hash_values)]  # 64-bit addition
+    return concatenate_hash(hash_values)
 
 
 def main():
-    with open(Path(__file__,'..')/'SHA-512-Input.txt') as file:
-        string=file.read()
+    with open('SHA-512-Input.txt') as file:
+        string = file.read()
+    print(string)
+    string=''
+    '''padded_bin_str = paddingBits(string)
+    num_blocks, blocks = divide_blocks(padded_bin_str)
+    final_hash = traverse(num_blocks, blocks)
+    #print(final_hash)'''
+    print(rotate_right(10,1))
 
-    paddedBinStr=paddingBits(string)
 
-    numBlock,blocks=dividor(paddedBinStr)
-
-    traverse(numBlock,blocks)
-
-
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
