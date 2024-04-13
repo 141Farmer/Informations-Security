@@ -198,7 +198,7 @@ def aesEncrypt(plaintext,keys,rounds):
     length=len(plaintext)
     ciphertext=[]
     for i in range(0,length,blockSize):
-        string=plaintext[i:min(i+blockSize,length-i)]
+        string=plaintext[i:i+blockSize]
         ciphertext+=aesBlockEncrypt(string,keys,rounds)
     return ciphertext
 
@@ -213,7 +213,7 @@ def aesDecrypt(ciphertext,keys,rounds):
 
 def main():
 
-    with open(Path(__file__,'..')/"AES-Input.txt","r") as file:
+    with open("AES-Input.txt","r") as file:
         plaintext=file.read()   
     print("Plain data : ",plaintext)
 
