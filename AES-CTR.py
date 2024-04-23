@@ -1,4 +1,3 @@
-from pathlib import Path
 from math import sqrt
 from random import randbytes
 
@@ -58,6 +57,15 @@ def removePadding(data):
 
 def Generate(block_size):
     return randbytes(block_size)
+
+def increment(byte):
+    byteList=[b for b in byte]
+    byteList[0]+=1
+    if byteList[0]>255:
+        byteList[0]=byteList[0]%256
+    byte=bytes(byteList)
+    return byte
+
 
 def g(word,roundConstant):
     rotatedWord=word[1:]+word[:1]
@@ -160,7 +168,6 @@ def XOR(State,keyMatrix):
 
 def aesBlockEncrypt(plaintext,keys):
     ciphertext=plaintext
-
     ciphertext=XOR(ciphertext,keys[0]) 
 
     for i in range(1,rounds):
@@ -175,52 +182,34 @@ def aesBlockEncrypt(plaintext,keys):
 
     return ciphertext
 
-def aesBlockDecrypt(ciphertext,keys):
-    plaintext=XOR(ciphertext,keys[-1]) 
 
-    for i in range(rounds-1,0,-1):
-        plaintext=InverseShiftRow(plaintext)
-        plaintext=InverseByteSub(plaintext)
-        plaintext=XOR(plaintext,keys[i])
-        plaintext=InverseMixColumn(plaintext)
-        
-    plaintext=InverseShiftRow(plaintext)
-    plaintext=InverseByteSub(plaintext)
-    plaintext=XOR(plaintext,keys[0])
-
-    return plaintext
-
-def aesEncrypt(plaintext,keys,iV):
+def aesEncrypt(plaintext,keys,counter):
     length=len(plaintext)
 
     ciphertext=[]
     plaintext=[ord(c) for c in plaintext]
-
-    currentVector=iV
-
+    
     for i in range(0,length,blockSize):
         string=plaintext[i:i+blockSize]
         string=padding(string,blockSize)
-        plaintemptext=XOR(string,currentVector)
-        ciphertemptext=aesBlockEncrypt(plaintemptext,keys)
-        currentVector=ciphertemptext
+        plaintemptext=aesBlockEncrypt(counter,keys)
+        ciphertemptext=XOR(string,plaintemptext)       
+        counter=increment(counter)
         ciphertext+=ciphertemptext
 
     return ciphertext
 
-def aesDecrypt(ciphertext,keys,iV):
+def aesDecrypt(ciphertext,keys,counter):
     length=len(ciphertext)
 
     plaintext=[]
     ciphertext=[ord(c) for c in ciphertext]
     
-    currentVector=iV
-
     for i in range(0,length,blockSize):
         string=ciphertext[i:i+blockSize]
-        ciphertemptext=aesBlockDecrypt(string,keys)
-        plaintemptext=XOR(ciphertemptext,currentVector)
-        currentVector=string
+        ciphertemptext=aesBlockEncrypt(counter,keys)
+        plaintemptext=XOR(ciphertemptext,string)
+        counter=increment(counter)
         plaintext+=plaintemptext
 
     return plaintext
@@ -231,18 +220,19 @@ def main():
         plaintext=file.read()   
     print("Plain data     : ",plaintext)
 
-    initialVector=Generate(blockSize)
-    print('Initial vector : ',initialVector)
+
+    counter=Generate(blockSize)
+    print('Counter        : ',counter)
 
     masterKey=Generate(blockSize)
     keys=expandedKeysGenerate(masterKey)
     print('Master Key     : ',masterKey)
     
-    encryptedtext=aesEncrypt(plaintext,keys,initialVector)
+    encryptedtext=aesEncrypt(plaintext,keys,counter)
     encryptedtext=''.join(chr(c) for c in encryptedtext)
     print('Encrypted text : ',encryptedtext)
 
-    decryptedtext=aesDecrypt(encryptedtext,keys,initialVector)
+    decryptedtext=aesDecrypt(encryptedtext,keys,counter)
     decryptedtext=removePadding(decryptedtext)
     decryptedtext=''.join(chr(c) for c in decryptedtext)
     print('Decrypted text : ',decryptedtext)

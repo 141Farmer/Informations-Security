@@ -27,7 +27,7 @@ initialHashValues=[
                 ]
 
 def ROTR(x,n):
-    return (x>>n) | (x<<(64-n))
+    return (x>>n) | (x<<(64-n)) & 0xFFFFFFFFFFFFFFFF
 
 def Sigma0(x):
     return ROTR(x,28) ^ ROTR(x,34) ^ ROTR(x,39)
@@ -50,6 +50,7 @@ def Maj(x,y,z):
 
 def sha512(message):
     h0,h1,h2,h3,h4,h5,h6,h7=initialHashValues
+
     lenMessage=len(message)
     message+=b'\x80'
     paddingLength=112-(len(message)%128)
@@ -58,16 +59,19 @@ def sha512(message):
     message+= b'\x00'*paddingLength
     paddedLen=(lenMessage * 8).to_bytes(16,'big') 
     message+=paddedLen
+
     for i in range(0,len(message),128):
         block=message[i:i+128]
-        words=[None]*80
+        words=[]
         a,b,c,d,e,f,g,h=h0,h1,h2,h3,h4,h5,h6,h7
 
+        for j in range(0,128,8):
+            words.append(int.from_bytes(block[j:j+8],'big'))
+
+        for j in range(16,80):    
+            words.append((sigma1(words[j-2])+words[j-7]+sigma0(words[j-15])+words[j-16]) & 0xFFFFFFFFFFFFFFFF)
+
         for j in range(80):
-            if j<16:
-                words[j]=int.from_bytes(block[j:j+8],'big')
-            else:
-                words[j]=(sigma1(words[j-2])+words[j-7]+sigma0(words[j-15])+words[j-16]) & 0xFFFFFFFFFFFFFFFF
             T1=h+Sigma1(e)+Ch(e,f,g)+constants[j]+words[j]
             T2=Sigma0(a)+Maj(a,b,c)
             h=g
@@ -96,6 +100,7 @@ def main():
     with open('SHA-512-Input.txt') as file:
         data=file.readline()
     print(data)
+ 
     hashValues=sha512(bytes(data,'utf-8'))
     print(hashValues)
     
