@@ -105,25 +105,11 @@ def ByteSub(state):
         state[i]=sbox[state[i]]
     return state
 
-def InverseByteSub(state):
-    it=len(state)
-    for i in range(it):
-        state[i]=inverse_sbox[state[i]]
-    return state
-
 def ShiftRow(state):
     it=int(sqrt(len(state)))
     for i in range(1,it):
         stind=i*4
         endind=stind+i
-        state[stind:stind+it]=state[endind:stind+it]+state[stind:endind]
-    return state
-
-def InverseShiftRow(state):
-    it=int(sqrt(len(state)))
-    for i in range(1,it):
-        stind=i*4
-        endind=stind+it-i
         state[stind:stind+it]=state[endind:stind+it]+state[stind:endind]
     return state
 
@@ -149,16 +135,6 @@ def MixColumn(state):
         resultMatrix[4*i+3]=galMul(state[4*i+3],2)^state[4*i+2]^state[4*i+1]^galMul(state[4*i+0],3)
     return resultMatrix
 
-def InverseMixColumn(state):
-    it=int(sqrt(len(state)))
-    resultMatrix=[None]*(it*it)
-    for i in range(it):
-        resultMatrix[4*i+0]=galMul(state[4*i+0],14)^galMul(state[4*i+3],9)^galMul(state[4*i+2],13)^galMul(state[4*i+1],11)
-        resultMatrix[4*i+1]=galMul(state[4*i+1],14)^galMul(state[4*i+0],9)^galMul(state[4*i+3],13)^galMul(state[4*i+2],11)
-        resultMatrix[4*i+2]=galMul(state[4*i+2],14)^galMul(state[4*i+1],9)^galMul(state[4*i+0],13)^galMul(state[4*i+3],11)
-        resultMatrix[4*i+3]=galMul(state[4*i+3],14)^galMul(state[4*i+2],9)^galMul(state[4*i+1],13)^galMul(state[4*i+0],11)
-    return resultMatrix
-
 def XOR(State,keyMatrix):
     result=[]
     it=len(State)
@@ -181,7 +157,6 @@ def aesBlockEncrypt(plaintext,keys):
     ciphertext=XOR(ciphertext,keys[-1])
 
     return ciphertext
-
 
 def aesEncrypt(plaintext,keys,counter):
     length=len(plaintext)
@@ -217,22 +192,26 @@ def aesDecrypt(ciphertext,keys,counter):
 def main():
 
     with open("AES-Input.txt","r") as file:
+        masterKey=file.readline()
+        counter=file.readline()
         plaintext=file.read()   
     print("Plain data     : ",plaintext)
 
 
-    counter=Generate(blockSize)
+    #counter=Generate(blockSize)
+    counterArray=[ord(i) for i in counter]
     print('Counter        : ',counter)
 
-    masterKey=Generate(blockSize)
-    keys=expandedKeysGenerate(masterKey)
+    #masterKey=Generate(blockSize)
+    masterKeyArray=[ord(i) for i in masterKey]
+    keys=expandedKeysGenerate(masterKeyArray)
     print('Master Key     : ',masterKey)
     
-    encryptedtext=aesEncrypt(plaintext,keys,counter)
+    encryptedtext=aesEncrypt(plaintext,keys,counterArray)
     encryptedtext=''.join(chr(c) for c in encryptedtext)
     print('Encrypted text : ',encryptedtext)
 
-    decryptedtext=aesDecrypt(encryptedtext,keys,counter)
+    decryptedtext=aesDecrypt(encryptedtext,keys,counterArray)
     decryptedtext=removePadding(decryptedtext)
     decryptedtext=''.join(chr(c) for c in decryptedtext)
     print('Decrypted text : ',decryptedtext)

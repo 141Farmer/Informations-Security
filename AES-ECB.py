@@ -66,11 +66,13 @@ def expandedKeysGenerate(masterKey, rounds):
     expandedKeys=[]
     numWords=44
     words=[None]*numWords
+    
     for i in range(4):
         temp=[]
         for j in range(4):
             temp.append(masterKey[4*i+j])
         words[i]=temp
+
     for i in range(4,numWords):
         temp=[]
         if i%4==0:
@@ -214,14 +216,16 @@ def aesDecrypt(ciphertext,keys,rounds):
 def main():
 
     with open("AES-Input.txt","r") as file:
+        masterKey=file.readline()
         plaintext=file.read()   
     print("Plain data : ",plaintext)
 
     block_size=16
     rounds=10
 
-    masterKey=keyGenerate(block_size)
-    keys=expandedKeysGenerate(masterKey,rounds)
+    #masterKey=keyGenerate(block_size)
+    masterKeyArray=[ord(i) for i in masterKey]
+    keys=expandedKeysGenerate(masterKeyArray,rounds)
     print('Master Key : ',masterKey)
     
     encryptedtext=aesEncrypt(plaintext,keys,rounds)

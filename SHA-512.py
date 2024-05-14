@@ -27,7 +27,7 @@ initialHashValues=[
                 ]
 
 def ROTR(x,n):
-    return (x>>n) | (x<<(64-n)) & 0xFFFFFFFFFFFFFFFF
+    return (x>>n) | (x<<(64-n))
 
 def Sigma0(x):
     return ROTR(x,28) ^ ROTR(x,34) ^ ROTR(x,39)
@@ -56,8 +56,8 @@ def sha512(message):
     paddingLength=112-(len(message)%128)
     if paddingLength<0:
         paddingLength+=128  
-    message+= b'\x00'*paddingLength
-    paddedLen=(lenMessage * 8).to_bytes(16,'big') 
+    message+=b'\x00'*paddingLength
+    paddedLen=(lenMessage*8).to_bytes(16,'big') 
     message+=paddedLen
 
     for i in range(0,len(message),128):
@@ -91,14 +91,15 @@ def sha512(message):
         h5=(h5+f) & 0xFFFFFFFFFFFFFFFF
         h6=(h6+g) & 0xFFFFFFFFFFFFFFFF
         h7=(h7+h) & 0xFFFFFFFFFFFFFFFF
-
+        
     hash_value=(h0<<448) | (h1<<384) | (h2<<320) | (h3<<256) | (h4<<192) | (h5<<128) | (h6<<64) | h7
     return format(hash_value,'064x')
 
 
 def main():
     with open('SHA-512-Input.txt') as file:
-        data=file.readline()
+        data=file.read()
+    #data=' '
     print(data)
  
     hashValues=sha512(bytes(data,'utf-8'))

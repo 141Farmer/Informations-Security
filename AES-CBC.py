@@ -227,21 +227,25 @@ def aesDecrypt(ciphertext,keys,iV):
 def main():
 
     with open("AES-Input.txt","r") as file:
+        masterKey=file.readline()
+        initialVector=file.readline()
         plaintext=file.read()   
     print("Plain data     : ",plaintext)
 
-    initialVector=Generate(blockSize)
+    #initialVector=Generate(blockSize)
+    initialVectorArray=[ord(i) for i in initialVector]
     print('Initial vector : ',initialVector)
 
-    masterKey=Generate(blockSize)
-    keys=expandedKeysGenerate(masterKey)
+    #masterKey=Generate(blockSize)
+    masterKeyArraay=[ord(i) for i in masterKey]
+    keys=expandedKeysGenerate(masterKeyArraay)
     print('Master Key     : ',masterKey)
     
-    encryptedtext=aesEncrypt(plaintext,keys,initialVector)
+    encryptedtext=aesEncrypt(plaintext,keys,initialVectorArray)
     encryptedtext=''.join(chr(c) for c in encryptedtext)
     print('Encrypted text : ',encryptedtext)
 
-    decryptedtext=aesDecrypt(encryptedtext,keys,initialVector)
+    decryptedtext=aesDecrypt(encryptedtext,keys,initialVectorArray)
     decryptedtext=removePadding(decryptedtext)
     decryptedtext=''.join(chr(c) for c in decryptedtext)
     print('Decrypted text : ',decryptedtext)
